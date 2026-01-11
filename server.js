@@ -216,7 +216,7 @@ app.get('/api/google/sheets', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`가계부 서버 실행 중: http://localhost:${PORT}`);
   console.log(`import 폴더: ${IMPORT_DIR}`);

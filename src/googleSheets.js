@@ -10,8 +10,9 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 const TOKEN_PATH = path.join(__dirname, '..', 'token.json');
 const CREDENTIALS_PATH = path.join(__dirname, '..', 'credentials.json');
 
-// 스프레드시트 설정
-const SPREADSHEET_ID = '1MK725XvdpkWESa8WlvgNNYGC_XK5UqNf76S8rihkmGM';
+// 스프레드시트 설정 (환경변수 또는 기본값)
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1MK725XvdpkWESa8WlvgNNYGC_XK5UqNf76S8rihkmGM';
+const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:8080/api/google/callback';
 const MONTHS = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
 let oAuth2Client = null;
@@ -20,17 +21,27 @@ let oAuth2Client = null;
  * OAuth2 클라이언트 초기화
  */
 export function initOAuth2Client() {
-  if (!fs.existsSync(CREDENTIALS_PATH)) {
-    return null;
+  // 환경변수 우선, 없으면 credentials.json 파일 사용
+  let client_id = process.env.GOOGLE_CLIENT_ID;
+  let client_secret = process.env.GOOGLE_CLIENT_SECRET;
+
+  if (!client_id || !client_secret) {
+    if (!fs.existsSync(CREDENTIALS_PATH)) {
+      return null;
+    }
+    const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
+    const creds = credentials.web || credentials.installed;
+    client_id = creds.client_id;
+    client_secret = creds.client_secret;
   }
 
-  const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
-  const { client_secret, client_id, redirect_uris } = credentials.web || credentials.installed;
+  oAuth2Client = new google.auth.OAuth2(client_id, client_secret, REDIRECT_URI);
 
-  oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
-  // 저장된 토큰 로드
-  if (fs.existsSync(TOKEN_PATH)) {
+  // 환경변수에서 토큰 로드 또는 파일에서 로드
+  if (process.env.GOOGLE_TOKEN) {
+    const token = JSON.parse(process.env.GOOGLE_TOKEN);
+    oAuth2Client.setCredentials(token);
+  } else if (fs.existsSync(TOKEN_PATH)) {
     const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
     oAuth2Client.setCredentials(token);
   }
