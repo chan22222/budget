@@ -20,7 +20,15 @@ export function getSpreadsheetId() {
   return currentSpreadsheetId;
 }
 
-export function setSpreadsheetId(id) {
+export function setSpreadsheetId(input) {
+  // URL에서 ID 추출 또는 그대로 사용
+  let id = input;
+  if (input && input.includes('docs.google.com/spreadsheets')) {
+    const match = input.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match) {
+      id = match[1];
+    }
+  }
   currentSpreadsheetId = id || DEFAULT_SPREADSHEET_ID;
   return currentSpreadsheetId;
 }
