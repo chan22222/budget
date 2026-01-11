@@ -40,8 +40,8 @@ export function parseTossBank(filePath) {
 
     // 수입/지출 판단
     const isIncome = amount > 0;
-    const incomeAmount = isIncome ? amount : 0;
-    const expenseAmount = isIncome ? 0 : Math.abs(amount);
+    const incomeAmount = isIncome ? Math.abs(amount) : 0;
+    const expenseAmount = !isIncome ? Math.abs(amount) : 0;
 
     // 지출수단 결정
     let paymentMethod = '체크카드';
