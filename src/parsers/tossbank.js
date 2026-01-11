@@ -1,11 +1,12 @@
 import XLSX from 'xlsx';
+import { openExcelFile } from './utils.js';
 
 /**
  * 토스뱅크 거래내역 파싱
  * 컬럼: 거래 일시, 적요, 거래 유형, 거래 기관, 계좌번호, 거래 금액, 거래 후 잔액, 메모
  */
-export function parseTossBank(filePath) {
-  const workbook = XLSX.readFile(filePath);
+export function parseTossBank(filePath, password = '') {
+  const workbook = openExcelFile(filePath, password);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 

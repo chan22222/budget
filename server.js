@@ -137,15 +137,24 @@ app.post('/api/upload', upload.array('files'), (req, res) => {
       return res.status(400).json({ error: '파일이 없습니다.' });
     }
 
+    const password = req.body.password || '';
     let allTransactions = [];
+    let needPassword = false;
 
     for (const file of req.files) {
       try {
-        const transactions = parseExcelFile(file.path);
+        const transactions = parseExcelFile(file.path, password);
         allTransactions = allTransactions.concat(transactions);
       } catch (e) {
         console.error(`파일 파싱 실패: ${file.originalname}`, e.message);
+        if (e.message === 'NEED_PASSWORD') {
+          needPassword = true;
+        }
       }
+    }
+
+    if (needPassword && allTransactions.length === 0) {
+      return res.status(400).json({ error: 'NEED_PASSWORD', message: '엑셀 비밀번호를 입력해주세요.' });
     }
 
     // 날짜순 정렬

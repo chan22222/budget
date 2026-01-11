@@ -197,6 +197,7 @@
           파일 업로드
           <input type="file" id="fileUpload" accept=".xlsx,.xls" multiple style="display:none;" onchange="uploadFiles(this.files)">
         </label>
+        <input type="password" id="excelPassword" placeholder="엑셀 비밀번호 (선택)" style="padding:8px 12px; border:1px solid #ddd; border-radius:5px; font-size:13px; width:150px;">
         <button class="file-btn google" onclick="connectGoogle()" id="btnGoogleConnect">Google 연결</button>
       </div>
       <div style="margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -434,9 +435,13 @@
     async function uploadFiles(files) {
       if (!files.length) return;
 
+      const password = document.getElementById('excelPassword').value;
       const formData = new FormData();
       for (const file of files) {
         formData.append('files', file);
+      }
+      if (password) {
+        formData.append('password', password);
       }
 
       document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">업로드 중...</td></tr>';
@@ -448,7 +453,13 @@
 
       const result = await res.json();
       if (result.error) {
-        alert(result.error);
+        if (result.error === 'NEED_PASSWORD') {
+          document.getElementById('excelPassword').focus();
+          alert('엑셀 비밀번호를 입력해주세요.');
+        } else {
+          alert(result.error);
+        }
+        document.getElementById('tableBody').innerHTML = '';
         return;
       }
 
@@ -456,6 +467,7 @@
       allData = result.data;
       renderTable();
       updateSummary();
+      document.getElementById('excelPassword').value = ''; // 비밀번호 초기화
       alert(`${result.count}건의 거래가 로드되었습니다.`);
     }
 

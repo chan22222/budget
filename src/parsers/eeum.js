@@ -1,11 +1,12 @@
 import XLSX from 'xlsx';
+import { openExcelFile } from './utils.js';
 
 /**
  * 인천e음 카드 거래내역 파싱
  * 컬럼: 거래일시, 카드번호, 결제처, 거래방식, 승인번호, 거래금액, 총 결제금액, 충전잔액, 내 캐시, 공급가액
  */
-export function parseEeum(filePath) {
-  const workbook = XLSX.readFile(filePath);
+export function parseEeum(filePath, password = '') {
+  const workbook = openExcelFile(filePath, password);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
