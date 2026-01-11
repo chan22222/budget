@@ -40,26 +40,52 @@ let oAuth2Client = null;
  * OAuth2 클라이언트 초기화
  */
 export function initOAuth2Client() {
-  // 환경변수 우선, 없으면 credentials.json 파일 사용
-  let client_id = process.env.GOOGLE_CLIENT_ID;
-  let client_secret = process.env.GOOGLE_CLIENT_SECRET;
+  let client_id, client_secret, redirect_uri;
 
-  if (!client_id || !client_secret) {
-    if (!fs.existsSync(CREDENTIALS_PATH)) {
-      return null;
+  // GOOGLE_CREDENTIALS 환경변수 (JSON) 우선
+  if (process.env.GOOGLE_CREDENTIALS) {
+    try {
+      const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+      const creds = credentials.web || credentials.installed;
+      client_id = creds.client_id;
+      client_secret = creds.client_secret;
+      redirect_uri = creds.redirect_uris?.[0] || REDIRECT_URI;
+    } catch (e) {
+      console.error('GOOGLE_CREDENTIALS 파싱 실패:', e.message);
     }
-    const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
-    const creds = credentials.web || credentials.installed;
-    client_id = creds.client_id;
-    client_secret = creds.client_secret;
   }
 
-  oAuth2Client = new google.auth.OAuth2(client_id, client_secret, REDIRECT_URI);
+  // 개별 환경변수
+  if (!client_id) client_id = process.env.GOOGLE_CLIENT_ID;
+  if (!client_secret) client_secret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!redirect_uri) redirect_uri = process.env.REDIRECT_URI || REDIRECT_URI;
+
+  // credentials.json 파일
+  if (!client_id || !client_secret) {
+    if (fs.existsSync(CREDENTIALS_PATH)) {
+      const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf8'));
+      const creds = credentials.web || credentials.installed;
+      client_id = client_id || creds.client_id;
+      client_secret = client_secret || creds.client_secret;
+      redirect_uri = redirect_uri || creds.redirect_uris?.[0];
+    }
+  }
+
+  if (!client_id || !client_secret) {
+    console.log('Google 인증 정보가 없습니다.');
+    return null;
+  }
+
+  oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uri);
 
   // 환경변수에서 토큰 로드 또는 파일에서 로드
   if (process.env.GOOGLE_TOKEN) {
-    const token = JSON.parse(process.env.GOOGLE_TOKEN);
-    oAuth2Client.setCredentials(token);
+    try {
+      const token = JSON.parse(process.env.GOOGLE_TOKEN);
+      oAuth2Client.setCredentials(token);
+    } catch (e) {
+      console.error('GOOGLE_TOKEN 파싱 실패:', e.message);
+    }
   } else if (fs.existsSync(TOKEN_PATH)) {
     const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
     oAuth2Client.setCredentials(token);
