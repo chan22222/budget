@@ -1,0 +1,10 @@
+node_modules/
+credentials.json
+token.json
+export/
+import/
+*.xlsx
+*.xls
+.env
+*.log
+.claude/
