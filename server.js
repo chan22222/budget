@@ -206,13 +206,22 @@ app.post('/api/export', (req, res) => {
 
 // ============ Google Sheets API ============
 
+// 실제 redirect_uri 계산
+function getActualRedirectUri(req) {
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  return `${protocol}://${host}/api/google/callback`;
+}
+
 // Google 인증 상태 확인
 app.get('/api/google/status', (req, res) => {
   try {
     const authenticated = gsheets.isAuthenticated();
-    const authUrl = !authenticated ? gsheets.getAuthUrl() : null;
+    const redirectUri = getActualRedirectUri(req);
+    const authUrl = !authenticated ? gsheets.getAuthUrl(redirectUri) : null;
     const spreadsheetId = gsheets.getSpreadsheetId();
-    res.json({ authenticated, authUrl, spreadsheetId });
+    const authSource = gsheets.getAuthSource();
+    res.json({ authenticated, authUrl, spreadsheetId, authSource, redirectUri });
   } catch (e) {
     res.json({ authenticated: false, authUrl: null, spreadsheetId: gsheets.getSpreadsheetId(), error: e.message });
   }
@@ -227,11 +236,13 @@ app.post('/api/google/spreadsheet-id', (req, res) => {
 
 // Google 인증 시작
 app.get('/api/google/auth', (req, res) => {
-  const authUrl = gsheets.getAuthUrl();
+  const redirectUri = getActualRedirectUri(req);
+  console.log('Auth redirect_uri:', redirectUri);
+  const authUrl = gsheets.getAuthUrl(redirectUri);
   if (authUrl) {
     res.redirect(authUrl);
   } else {
-    res.status(500).json({ error: 'credentials.json 파일이 필요합니다.' });
+    res.status(500).json({ error: 'GOOGLE_CREDENTIALS 환경변수가 필요합니다.' });
   }
 });
 
@@ -239,10 +250,66 @@ app.get('/api/google/auth', (req, res) => {
 app.get('/api/google/callback', async (req, res) => {
   try {
     const code = req.query.code;
-    await gsheets.getTokenFromCode(code);
-    res.redirect('/?google=connected');
+    const redirectUri = getActualRedirectUri(req);
+    console.log('Callback redirect_uri:', redirectUri);
+
+    const tokens = await gsheets.getTokenFromCode(code, redirectUri);
+
+    // 토큰을 화면에 표시 (환경변수에 복사할 수 있도록)
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>토큰 발급 완료</title>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 30px; max-width: 800px; margin: 0 auto; }
+          h1 { color: #4CAF50; }
+          textarea { width: 100%; height: 120px; font-size: 12px; font-family: monospace; }
+          .success { background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0; }
+          .info { background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 20px 0; }
+          a { color: #1976D2; }
+          button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+          button:hover { background: #388E3C; }
+        </style>
+      </head>
+      <body>
+        <h1>Google 인증 완료!</h1>
+        <div class="success">
+          <strong>메모리에 토큰이 저장되었습니다.</strong><br>
+          지금 바로 사용할 수 있습니다.
+        </div>
+
+        <div class="info">
+          <strong>영구 저장하려면:</strong><br>
+          아래 토큰을 Railway 환경변수 <code>GOOGLE_TOKEN</code>에 저장하세요.<br>
+          (서버 재시작 후에도 인증 유지)
+        </div>
+
+        <textarea id="token" readonly>${JSON.stringify(tokens)}</textarea>
+        <br><br>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('token').value); alert('복사됨!')">토큰 복사</button>
+        <br><br>
+        <a href="/">← 메인 페이지로 이동</a>
+      </body>
+      </html>
+    `);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error('OAuth callback error:', e);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html>
+      <head><title>인증 오류</title><meta charset="utf-8"></head>
+      <body style="font-family: Arial; padding: 30px;">
+        <h1 style="color: red;">인증 실패</h1>
+        <p>${e.message}</p>
+        <p>Google Cloud Console에서 redirect_uri를 확인하세요:</p>
+        <code>${getActualRedirectUri(req)}</code>
+        <br><br>
+        <a href="/">← 메인 페이지</a>
+      </body>
+      </html>
+    `);
   }
 });
 

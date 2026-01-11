@@ -677,7 +677,15 @@
 
         const result = await res.json();
         if (result.success) {
-          alert(`${selectedMonth} 시트에 ${filteredData.length}건 추가 완료!`);
+          const added = result.addedCount || 0;
+          const skipped = result.skippedCount || 0;
+          if (skipped > 0) {
+            alert(`${selectedMonth} 시트에 ${added}건 추가 완료!\n(중복 ${skipped}건 제외)`);
+          } else if (added === 0) {
+            alert(`모든 데이터가 이미 존재합니다.`);
+          } else {
+            alert(`${selectedMonth} 시트에 ${added}건 추가 완료!`);
+          }
         } else {
           alert('동기화 실패: ' + result.error);
         }
