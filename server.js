@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import XLSX from 'xlsx';
+import multer from 'multer';
 import { parseExcelFile, toBudgetFormat } from './src/parsers/index.js';
 import * as gsheets from './src/googleSheets.js';
 
@@ -22,6 +23,21 @@ const EXPORT_DIR = path.join(__dirname, 'export');
 if (!fs.existsSync(EXPORT_DIR)) {
   fs.mkdirSync(EXPORT_DIR, { recursive: true });
 }
+
+// import 폴더 생성
+if (!fs.existsSync(IMPORT_DIR)) {
+  fs.mkdirSync(IMPORT_DIR, { recursive: true });
+}
+
+// multer 설정 (파일 업로드)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, IMPORT_DIR),
+  filename: (req, file, cb) => {
+    const name = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    cb(null, name);
+  }
+});
+const upload = multer({ storage });
 
 // 카테고리 정의 (Google Sheets 가계부 형식)
 const CATEGORIES = {
@@ -114,6 +130,39 @@ app.get('/api/categories', (req, res) => {
   res.json(CATEGORIES);
 });
 
+// 파일 업로드 및 파싱
+app.post('/api/upload', upload.array('files'), (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: '파일이 없습니다.' });
+    }
+
+    let allTransactions = [];
+
+    for (const file of req.files) {
+      try {
+        const transactions = parseExcelFile(file.path);
+        allTransactions = allTransactions.concat(transactions);
+      } catch (e) {
+        console.error(`파일 파싱 실패: ${file.originalname}`, e.message);
+      }
+    }
+
+    // 날짜순 정렬
+    allTransactions.sort((a, b) => a.date.localeCompare(b.date));
+
+    const budgetData = toBudgetFormat(allTransactions);
+
+    res.json({
+      count: budgetData.length,
+      files: req.files.map(f => f.originalname),
+      data: budgetData
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 거래 업데이트 (카테고리 수정 등)
 app.post('/api/update', (req, res) => {
   // TODO: 수정된 데이터 저장
@@ -161,7 +210,15 @@ app.post('/api/export', (req, res) => {
 app.get('/api/google/status', (req, res) => {
   const authenticated = gsheets.isAuthenticated();
   const authUrl = !authenticated ? gsheets.getAuthUrl() : null;
-  res.json({ authenticated, authUrl });
+  const spreadsheetId = gsheets.getSpreadsheetId();
+  res.json({ authenticated, authUrl, spreadsheetId });
+});
+
+// 스프레드시트 ID 설정
+app.post('/api/google/spreadsheet-id', (req, res) => {
+  const { spreadsheetId } = req.body;
+  const newId = gsheets.setSpreadsheetId(spreadsheetId);
+  res.json({ success: true, spreadsheetId: newId });
 });
 
 // Google 인증 시작

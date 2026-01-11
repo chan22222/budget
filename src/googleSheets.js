@@ -11,8 +11,19 @@ const TOKEN_PATH = path.join(__dirname, '..', 'token.json');
 const CREDENTIALS_PATH = path.join(__dirname, '..', 'credentials.json');
 
 // 스프레드시트 설정 (환경변수 또는 기본값)
-const SPREADSHEET_ID = process.env.SPREADSHEET_ID || '1MK725XvdpkWESa8WlvgNNYGC_XK5UqNf76S8rihkmGM';
+const DEFAULT_SPREADSHEET_ID = '1MK725XvdpkWESa8WlvgNNYGC_XK5UqNf76S8rihkmGM';
+let currentSpreadsheetId = process.env.SPREADSHEET_ID || DEFAULT_SPREADSHEET_ID;
 const REDIRECT_URI = process.env.REDIRECT_URI || 'http://localhost:8080/api/google/callback';
+
+// 스프레드시트 ID getter/setter
+export function getSpreadsheetId() {
+  return currentSpreadsheetId;
+}
+
+export function setSpreadsheetId(id) {
+  currentSpreadsheetId = id || DEFAULT_SPREADSHEET_ID;
+  return currentSpreadsheetId;
+}
 const MONTHS = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
 
 let oAuth2Client = null;
@@ -98,7 +109,7 @@ export async function readSheetData(month) {
 
   // B11:L999 범위 읽기
   const response = await sheets.spreadsheets.values.get({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId: currentSpreadsheetId,
     range: `${sheetName}!B11:L999`,
   });
 
@@ -146,7 +157,7 @@ export async function appendToSheet(month, data) {
 
   // 기존 데이터 다음 행에 추가
   const response = await sheets.spreadsheets.values.append({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId: currentSpreadsheetId,
     range: `${sheetName}!B11:J`,
     valueInputOption: 'USER_ENTERED',
     insertDataOption: 'INSERT_ROWS',
@@ -180,7 +191,7 @@ export async function updateSheet(month, startRow, data) {
   ]);
 
   const response = await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId: currentSpreadsheetId,
     range: `${sheetName}!B${startRow}:J${startRow + values.length - 1}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
@@ -200,10 +211,10 @@ export async function getSheetList() {
   const sheets = google.sheets({ version: 'v4', auth: oAuth2Client });
 
   const response = await sheets.spreadsheets.get({
-    spreadsheetId: SPREADSHEET_ID,
+    spreadsheetId: currentSpreadsheetId,
   });
 
   return response.data.sheets.map(s => s.properties.title);
 }
 
-export { SPREADSHEET_ID, MONTHS };
+export { currentSpreadsheetId, MONTHS };
