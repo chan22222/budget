@@ -191,12 +191,12 @@ export async function appendToSheet(month, data) {
     row.비고 || ''
   ]);
 
-  // 기존 데이터 다음 행에 추가
+  // 기존 데이터 다음 행에 추가 (행 삽입 없이)
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: currentSpreadsheetId,
     range: `${sheetName}!B11:J`,
     valueInputOption: 'USER_ENTERED',
-    insertDataOption: 'INSERT_ROWS',
+    insertDataOption: 'OVERWRITE',
     requestBody: { values }
   });
 
