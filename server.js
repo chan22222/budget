@@ -208,10 +208,14 @@ app.post('/api/export', (req, res) => {
 
 // Google 인증 상태 확인
 app.get('/api/google/status', (req, res) => {
-  const authenticated = gsheets.isAuthenticated();
-  const authUrl = !authenticated ? gsheets.getAuthUrl() : null;
-  const spreadsheetId = gsheets.getSpreadsheetId();
-  res.json({ authenticated, authUrl, spreadsheetId });
+  try {
+    const authenticated = gsheets.isAuthenticated();
+    const authUrl = !authenticated ? gsheets.getAuthUrl() : null;
+    const spreadsheetId = gsheets.getSpreadsheetId();
+    res.json({ authenticated, authUrl, spreadsheetId });
+  } catch (e) {
+    res.json({ authenticated: false, authUrl: null, spreadsheetId: gsheets.getSpreadsheetId(), error: e.message });
+  }
 });
 
 // 스프레드시트 ID 설정

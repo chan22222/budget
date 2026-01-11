@@ -46,10 +46,12 @@ export function initOAuth2Client() {
   if (process.env.GOOGLE_CREDENTIALS) {
     try {
       const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
-      const creds = credentials.web || credentials.installed;
-      client_id = creds.client_id;
-      client_secret = creds.client_secret;
-      redirect_uri = creds.redirect_uris?.[0] || REDIRECT_URI;
+      const creds = credentials?.web || credentials?.installed;
+      if (creds) {
+        client_id = creds.client_id;
+        client_secret = creds.client_secret;
+        redirect_uri = creds.redirect_uris?.[0] || REDIRECT_URI;
+      }
     } catch (e) {
       console.error('GOOGLE_CREDENTIALS 파싱 실패:', e.message);
     }
