@@ -41,13 +41,13 @@ export function parseEeum(filePath) {
     transactions.push({
       date,
       category: '기타지출',
-      subcategory: '인천e음',
+      subcategory: '기타지출',
       description: `인천e음 결제`,
       incomeAmount: 0,
       expenseAmount: amount,
       paymentMethod: '인천e음',
       expenseType: '변동',
-      memo: `[인천e음]`,
+      memo: '인천e음',
       source: '인천e음',
       balance
     });

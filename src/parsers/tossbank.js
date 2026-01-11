@@ -69,7 +69,7 @@ export function parseTossBank(filePath) {
       expenseAmount,
       paymentMethod,
       expenseType: isIncome ? '' : '변동',
-      memo: '[토스뱅크]',
+      memo: '토스뱅크',
       source: '토스뱅크',
       balance
     });

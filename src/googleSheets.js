@@ -235,7 +235,8 @@ export async function readSheetData(month) {
 
   const rows = response.data.values || [];
 
-  // 가계부 형식으로 변환
+  // 가계부 형식으로 변환 (F, G 열은 빈칸이므로 건너뜀)
+  // B:날짜, C:대분류, D:소분류, E:내용, F:빈칸, G:빈칸, H:수입금액, I:지출금액, J:지출수단, K:지출성격, L:비고
   return rows
     .filter(row => row[0]) // 날짜가 있는 행만
     .map(row => ({
@@ -243,11 +244,11 @@ export async function readSheetData(month) {
       대분류: row[1] || '',
       소분류: row[2] || '',
       내용: row[3] || '',
-      수입금액: row[4] || '',
-      지출금액: row[5] || '',
-      지출수단: row[6] || '',
-      지출성격: row[7] || '',
-      비고: row[8] || ''
+      수입금액: row[6] || '',  // H열 (index 6)
+      지출금액: row[7] || '',  // I열 (index 7)
+      지출수단: row[8] || '',  // J열 (index 8)
+      지출성격: row[9] || '',  // K열 (index 9)
+      비고: row[10] || ''      // L열 (index 10)
     }));
 }
 
@@ -263,11 +264,12 @@ export async function appendToSheet(month, data) {
   const sheetName = month || '1월';
 
   // 기존 데이터 읽기 (중복 체크용)
+  // B:날짜, C:대분류, D:소분류, E:내용, F:빈칸, G:빈칸, H:수입금액, I:지출금액, J:지출수단, K:지출성격, L:비고
   let existingData = [];
   try {
     const existing = await sheets.spreadsheets.values.get({
       spreadsheetId: currentSpreadsheetId,
-      range: `${sheetName}!B11:J999`,
+      range: `${sheetName}!B11:L999`,
     });
     existingData = existing.data.values || [];
   } catch (e) {
@@ -275,10 +277,11 @@ export async function appendToSheet(month, data) {
   }
 
   // 기존 데이터 키 생성 (날짜 + 내용 + 수입금액 + 지출금액)
+  // F,G는 빈칸이므로 H(index 6), I(index 7)가 수입/지출금액
   const existingKeys = new Set();
   existingData.forEach(row => {
     if (row[0]) {
-      const key = `${row[0]}|${row[3] || ''}|${row[4] || ''}|${row[5] || ''}`;
+      const key = `${row[0]}|${row[3] || ''}|${row[6] || ''}|${row[7] || ''}`;
       existingKeys.add(key);
     }
   });
@@ -293,12 +296,15 @@ export async function appendToSheet(month, data) {
     return { updatedRows: 0, message: '모든 데이터가 이미 존재합니다.' };
   }
 
-  // 데이터를 배열 형식으로 변환
+  // 데이터를 배열 형식으로 변환 (F, G 열은 빈칸)
+  // B:날짜, C:대분류, D:소분류, E:내용, F:빈칸, G:빈칸, H:수입금액, I:지출금액, J:지출수단, K:지출성격, L:비고
   const values = newData.map(row => [
     row.날짜,
     row.대분류,
     row.소분류,
     row.내용,
+    '',  // F열 빈칸
+    '',  // G열 빈칸
     row.수입금액 || '',
     row.지출금액 || '',
     row.지출수단 || '',
@@ -309,7 +315,7 @@ export async function appendToSheet(month, data) {
   // 기존 데이터 다음 빈 행에 추가
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: currentSpreadsheetId,
-    range: `${sheetName}!B11:J`,
+    range: `${sheetName}!B11:L`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   });
@@ -332,11 +338,14 @@ export async function updateSheet(month, startRow, data) {
   const sheets = google.sheets({ version: 'v4', auth: oAuth2Client });
   const sheetName = month || '1월';
 
+  // F, G 열은 빈칸
   const values = data.map(row => [
     row.날짜,
     row.대분류,
     row.소분류,
     row.내용,
+    '',  // F열 빈칸
+    '',  // G열 빈칸
     row.수입금액 || '',
     row.지출금액 || '',
     row.지출수단 || '',
@@ -346,7 +355,7 @@ export async function updateSheet(month, startRow, data) {
 
   const response = await sheets.spreadsheets.values.update({
     spreadsheetId: currentSpreadsheetId,
-    range: `${sheetName}!B${startRow}:J${startRow + values.length - 1}`,
+    range: `${sheetName}!B${startRow}:L${startRow + values.length - 1}`,
     valueInputOption: 'USER_ENTERED',
     requestBody: { values }
   });

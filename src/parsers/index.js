@@ -35,17 +35,27 @@ export function parseExcelFile(filePath) {
  * 가계부 형식으로 변환
  */
 export function toBudgetFormat(transactions) {
-  return transactions.map(tx => ({
-    날짜: tx.date,
-    대분류: tx.category,
-    소분류: tx.subcategory,
-    내용: tx.description,
-    수입금액: tx.incomeAmount || '',
-    지출금액: tx.expenseAmount || '',
-    지출수단: tx.paymentMethod,
-    지출성격: tx.expenseType,
-    비고: tx.memo
-  }));
+  return transactions.map(tx => {
+    // 날짜에서 일만 추출 (2026-01-15 -> 15)
+    let day = tx.date;
+    if (tx.date && tx.date.includes('-')) {
+      const parts = tx.date.split('-');
+      day = parseInt(parts[2], 10).toString(); // 01 -> 1
+    }
+
+    return {
+      날짜: day,
+      대분류: tx.category,
+      소분류: tx.subcategory,
+      내용: tx.description,
+      수입금액: tx.incomeAmount || '',
+      지출금액: tx.expenseAmount || '',
+      지출수단: tx.paymentMethod,
+      지출성격: tx.expenseType,
+      비고: tx.memo,
+      _fullDate: tx.date  // 월 필터링용 원본 날짜
+    };
+  });
 }
 
 export { parseTossBank, parseEeum };

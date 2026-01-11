@@ -646,10 +646,11 @@
       const selectedMonth = document.getElementById('targetSheet').value;
       const targetMonthNum = parseInt(selectedMonth); // "1월" -> 1
 
-      // 선택한 월에 해당하는 데이터만 필터링
+      // 선택한 월에 해당하는 데이터만 필터링 (_fullDate 사용)
       const filteredData = data.filter(row => {
-        if (!row.날짜) return false;
-        const parts = row.날짜.split('-');
+        const fullDate = row._fullDate || '';
+        if (!fullDate) return false;
+        const parts = fullDate.split('-');
         if (parts.length >= 2) {
           const dataMonth = parseInt(parts[1]);
           return dataMonth === targetMonthNum;
@@ -662,11 +663,11 @@
         return;
       }
 
-      // 날짜 형식 변환 (YYYY-MM-DD -> 일)
-      const formattedData = filteredData.map(row => ({
-        ...row,
-        날짜: row.날짜 ? parseInt(row.날짜.split('-')[2]) : ''
-      }));
+      // _fullDate는 서버에 보내지 않음
+      const formattedData = filteredData.map(row => {
+        const { _fullDate, ...rest } = row;
+        return rest;
+      });
 
       try {
         const res = await fetch('/api/google/append', {
