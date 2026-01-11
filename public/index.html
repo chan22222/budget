@@ -202,7 +202,22 @@
       <div style="margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
         <label style="font-size:14px; color:#666;">스프레드시트 ID:</label>
         <input type="text" id="spreadsheetId" placeholder="스프레드시트 ID 입력" style="flex:1; min-width:200px; max-width:400px; padding:8px 12px; border:1px solid #ddd; border-radius:5px; font-size:13px;">
-        <button class="file-btn" onclick="saveSpreadsheetId()" style="background:#6c757d;">저장</button>
+        <label style="font-size:14px; color:#666; margin-left:10px;">시트:</label>
+        <select id="targetMonth" style="padding:8px 12px; border:1px solid #ddd; border-radius:5px; font-size:13px;">
+          <option value="1월">1월</option>
+          <option value="2월">2월</option>
+          <option value="3월">3월</option>
+          <option value="4월">4월</option>
+          <option value="5월">5월</option>
+          <option value="6월">6월</option>
+          <option value="7월">7월</option>
+          <option value="8월">8월</option>
+          <option value="9월">9월</option>
+          <option value="10월">10월</option>
+          <option value="11월">11월</option>
+          <option value="12월">12월</option>
+        </select>
+        <button class="file-btn" onclick="saveSettings()" style="background:#6c757d;">저장</button>
       </div>
     </div>
 
@@ -316,12 +331,20 @@
       await loadCategories();
       await checkGoogleStatus();
       setupFilters();
+      setCurrentMonth();
 
       // URL 파라미터 체크
       if (location.search.includes('google=connected')) {
         history.replaceState({}, '', '/');
         await checkGoogleStatus();
       }
+    }
+
+    // 현재 월로 기본 설정
+    function setCurrentMonth() {
+      const currentMonth = new Date().getMonth() + 1; // 1-12
+      document.getElementById('targetMonth').value = currentMonth + '월';
+      document.getElementById('targetSheet').value = currentMonth + '월';
     }
 
     // 파일 목록 로드
@@ -387,8 +410,8 @@
       }
     }
 
-    // 스프레드시트 ID 저장
-    async function saveSpreadsheetId() {
+    // 설정 저장 (스프레드시트 ID)
+    async function saveSettings() {
       const id = document.getElementById('spreadsheetId').value.trim();
       if (!id) {
         alert('스프레드시트 ID를 입력해주세요.');
@@ -403,7 +426,7 @@
 
       const result = await res.json();
       if (result.success) {
-        alert('스프레드시트 ID가 저장되었습니다.');
+        alert('설정이 저장되었습니다.');
       }
     }
 
@@ -606,11 +629,9 @@
       const data = getFilteredData();
       document.getElementById('syncCount').textContent = data.length;
 
-      // 현재 선택된 월로 기본값 설정
-      const month = document.getElementById('filterMonth').value;
-      if (month) {
-        document.getElementById('targetSheet').value = parseInt(month) + '월';
-      }
+      // 상단에서 선택한 시트로 기본값 설정
+      const targetMonth = document.getElementById('targetMonth').value;
+      document.getElementById('targetSheet').value = targetMonth;
 
       document.getElementById('syncModal').classList.add('show');
     }
