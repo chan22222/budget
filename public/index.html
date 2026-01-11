@@ -128,6 +128,34 @@
       color: #666;
     }
 
+    .file-tabs {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .file-tab {
+      padding: 8px 16px;
+      border: 1px solid #ddd;
+      background: #f8f9fa;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .file-tab:hover {
+      background: #e9ecef;
+    }
+    .file-tab.active {
+      background: #4a90d9;
+      color: white;
+      border-color: #4a90d9;
+    }
+    .file-tab.need-password {
+      background: #fff3cd;
+      border-color: #ffc107;
+      color: #856404;
+    }
+
     .google-status {
       display: inline-flex;
       align-items: center;
@@ -246,6 +274,9 @@
 
     <div class="card">
       <h2>거래 내역</h2>
+      <div id="fileTabs" class="file-tabs" style="display:none; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+        <button class="file-tab active" data-file="all">전체</button>
+      </div>
       <div class="toolbar">
         <select id="filterMonth">
           <option value="">전체 월</option>
@@ -323,6 +354,8 @@
 
   <script>
     let allData = [];
+    let fileData = {};  // 파일별 데이터
+    let currentFile = 'all';  // 현재 선택된 파일
     let categories = {};
     let googleConnected = false;
 
@@ -465,10 +498,77 @@
 
       // 업로드 후 파일 목록 새로고침 및 데이터 로드
       allData = result.data;
+      fileData = result.fileData || {};
+      currentFile = 'all';
+
+      // 파일 탭 생성
+      renderFileTabs(result.files || []);
+
       renderTable();
       updateSummary();
       document.getElementById('excelPassword').value = ''; // 비밀번호 초기화
-      alert(`${result.count}건의 거래가 로드되었습니다.`);
+
+      // 비밀번호 필요한 파일 알림
+      if (result.needPasswordFiles && result.needPasswordFiles.length > 0) {
+        alert(`${result.count}건 로드됨.\n비밀번호 필요: ${result.needPasswordFiles.join(', ')}`);
+      } else {
+        alert(`${result.count}건의 거래가 로드되었습니다.`);
+      }
+    }
+
+    // 파일 탭 렌더링
+    function renderFileTabs(files) {
+      const container = document.getElementById('fileTabs');
+      const successFiles = files.filter(f => f.status === 'success');
+
+      if (successFiles.length <= 1) {
+        container.style.display = 'none';
+        return;
+      }
+
+      container.style.display = 'flex';
+      container.innerHTML = '<button class="file-tab active" data-file="all" onclick="selectFileTab(\'all\')">전체</button>';
+
+      for (const file of files) {
+        const btn = document.createElement('button');
+        btn.className = 'file-tab';
+        if (file.status === 'need_password') {
+          btn.className += ' need-password';
+          btn.textContent = `${file.name} (비밀번호 필요)`;
+        } else if (file.status === 'success') {
+          btn.textContent = `${file.name} (${file.count}건)`;
+          btn.setAttribute('data-file', file.name);
+          btn.onclick = () => selectFileTab(file.name);
+        } else {
+          btn.textContent = `${file.name} (오류)`;
+          btn.style.opacity = '0.5';
+        }
+        container.appendChild(btn);
+      }
+    }
+
+    // 파일 탭 선택
+    function selectFileTab(fileName) {
+      currentFile = fileName;
+
+      // 탭 활성화 상태 업데이트
+      document.querySelectorAll('.file-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.getAttribute('data-file') === fileName) {
+          tab.classList.add('active');
+        }
+      });
+
+      renderTable();
+      updateSummary();
+    }
+
+    // 현재 파일 데이터 가져오기
+    function getCurrentData() {
+      if (currentFile === 'all') {
+        return allData;
+      }
+      return fileData[currentFile] || [];
     }
 
     // Google 연결
@@ -522,9 +622,14 @@
       const month = document.getElementById('filterMonth').value;
       const category = document.getElementById('filterCategory').value;
       const search = document.getElementById('searchText').value.toLowerCase();
+      const data = getCurrentData();
 
-      return allData.filter(row => {
-        if (month && !row.날짜.includes(`-${month}-`)) return false;
+      return data.filter(row => {
+        // 월 필터링 (_fullDate 사용)
+        if (month) {
+          const fullDate = row._fullDate || '';
+          if (!fullDate.includes(`-${month}-`)) return false;
+        }
         if (category && row.대분류 !== category) return false;
         if (search) {
           const text = `${row.내용} ${row.비고} ${row.소분류}`.toLowerCase();
