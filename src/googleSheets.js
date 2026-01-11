@@ -276,20 +276,44 @@ export async function appendToSheet(month, data) {
     console.log('기존 데이터 읽기 실패:', e.message);
   }
 
-  // 기존 데이터 키 생성 (날짜 + 내용 + 수입금액 + 지출금액)
-  // F,G는 빈칸이므로 H(index 6), I(index 7)가 수입/지출금액
-  const existingKeys = new Set();
-  existingData.forEach(row => {
-    if (row[0]) {
-      const key = `${row[0]}|${row[3] || ''}|${row[6] || ''}|${row[7] || ''}`;
-      existingKeys.add(key);
-    }
-  });
+  // 기존 데이터 파싱 (느슨한 중복 체크용)
+  // B:날짜(0), C:대분류(1), D:소분류(2), E:내용(3), F:빈칸(4), G:빈칸(5), H:수입(6), I:지출(7), J:수단(8), K:성격(9), L:비고(10)
+  const existingRows = existingData
+    .filter(row => row[0])
+    .map(row => ({
+      날짜: String(row[0] || ''),
+      내용: String(row[3] || ''),
+      수입금액: String(row[6] || ''),
+      지출금액: String(row[7] || ''),
+      비고: String(row[10] || '')
+    }));
 
-  // 중복 제거
+  // 2글자 이상 겹치는지 체크
+  function hasCommonChars(str1, str2, minChars = 2) {
+    if (!str1 || !str2) return false;
+    const s1 = str1.toLowerCase();
+    const s2 = str2.toLowerCase();
+    // 2글자씩 잘라서 비교
+    for (let i = 0; i <= s1.length - minChars; i++) {
+      const substr = s1.substring(i, i + minChars);
+      if (s2.includes(substr)) return true;
+    }
+    return false;
+  }
+
+  // 느슨한 중복 체크: 날짜 + 금액 + 은행(비고) 동일 + 내용 2글자 이상 겹침
   const newData = data.filter(row => {
-    const key = `${row.날짜}|${row.내용 || ''}|${row.수입금액 || ''}|${row.지출금액 || ''}`;
-    return !existingKeys.has(key);
+    const isDuplicate = existingRows.some(existing => {
+      const sameDate = String(row.날짜) === existing.날짜;
+      const sameIncome = String(row.수입금액 || '') === existing.수입금액;
+      const sameExpense = String(row.지출금액 || '') === existing.지출금액;
+      const sameAmount = sameIncome && sameExpense;
+      const sameBank = String(row.비고 || '') === existing.비고;
+      const contentOverlap = hasCommonChars(row.내용, existing.내용, 2);
+
+      return sameDate && sameAmount && sameBank && contentOverlap;
+    });
+    return !isDuplicate;
   });
 
   if (newData.length === 0) {
