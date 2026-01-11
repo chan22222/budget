@@ -644,68 +644,45 @@
     async function confirmSync() {
       const data = getFilteredData();
       const selectedMonth = document.getElementById('targetSheet').value;
-      const autoByMonth = confirm('각 데이터를 해당 월 시트에 자동 분류할까요?\n\n확인: 월별 자동 분류\n취소: 선택한 시트(' + selectedMonth + ')에 모두 추가');
+      const targetMonthNum = parseInt(selectedMonth); // "1월" -> 1
 
-      if (autoByMonth) {
-        // 월별로 데이터 그룹화
-        const dataByMonth = {};
-        data.forEach(row => {
-          if (!row.날짜) return;
-          const parts = row.날짜.split('-');
-          if (parts.length >= 2) {
-            const monthNum = parseInt(parts[1]);
-            const monthName = monthNum + '월';
-            if (!dataByMonth[monthName]) dataByMonth[monthName] = [];
-            dataByMonth[monthName].push({
-              ...row,
-              날짜: parseInt(parts[2]) || ''
-            });
-          }
+      // 선택한 월에 해당하는 데이터만 필터링
+      const filteredData = data.filter(row => {
+        if (!row.날짜) return false;
+        const parts = row.날짜.split('-');
+        if (parts.length >= 2) {
+          const dataMonth = parseInt(parts[1]);
+          return dataMonth === targetMonthNum;
+        }
+        return false;
+      });
+
+      if (filteredData.length === 0) {
+        alert(`${selectedMonth} 데이터가 없습니다.`);
+        return;
+      }
+
+      // 날짜 형식 변환 (YYYY-MM-DD -> 일)
+      const formattedData = filteredData.map(row => ({
+        ...row,
+        날짜: row.날짜 ? parseInt(row.날짜.split('-')[2]) : ''
+      }));
+
+      try {
+        const res = await fetch('/api/google/append', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ month: selectedMonth, data: formattedData })
         });
 
-        // 각 월별로 동기화
-        let totalCount = 0;
-        let results = [];
-        for (const [month, monthData] of Object.entries(dataByMonth)) {
-          try {
-            const res = await fetch('/api/google/append', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ month, data: monthData })
-            });
-            const result = await res.json();
-            if (result.success) {
-              totalCount += monthData.length;
-              results.push(`${month}: ${monthData.length}건`);
-            }
-          } catch (e) {
-            results.push(`${month}: 실패`);
-          }
+        const result = await res.json();
+        if (result.success) {
+          alert(`${selectedMonth} 시트에 ${filteredData.length}건 추가 완료!`);
+        } else {
+          alert('동기화 실패: ' + result.error);
         }
-        alert(`동기화 완료!\n\n${results.join('\n')}\n\n총 ${totalCount}건`);
-      } else {
-        // 선택한 시트에 모두 추가
-        const formattedData = data.map(row => ({
-          ...row,
-          날짜: row.날짜 ? parseInt(row.날짜.split('-')[2]) : ''
-        }));
-
-        try {
-          const res = await fetch('/api/google/append', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ month: selectedMonth, data: formattedData })
-          });
-
-          const result = await res.json();
-          if (result.success) {
-            alert(`${selectedMonth} 시트에 ${data.length}건 추가 완료!`);
-          } else {
-            alert('동기화 실패: ' + result.error);
-          }
-        } catch (e) {
-          alert('동기화 실패: ' + e.message);
-        }
+      } catch (e) {
+        alert('동기화 실패: ' + e.message);
       }
       closeSyncModal();
     }
