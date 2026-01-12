@@ -7,8 +7,8 @@ import path from 'path';
 /**
  * 파일 유형 감지 및 적절한 파서 선택
  */
-export function parseExcelFile(filePath, password = '') {
-  const workbook = openExcelFile(filePath, password);
+export async function parseExcelFile(filePath, password = '') {
+  const workbook = await openExcelFile(filePath, password);
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
@@ -16,17 +16,17 @@ export function parseExcelFile(filePath, password = '') {
   const content = data.flat().join(' ');
 
   if (content.includes('토스뱅크')) {
-    return parseTossBank(filePath, password);
+    return await parseTossBank(filePath, password);
   }
 
   if (content.includes('e음') || content.includes('인천')) {
-    return parseEeum(filePath, password);
+    return await parseEeum(filePath, password);
   }
 
   // 파일명으로 판단
   const filename = path.basename(filePath).toLowerCase();
   if (filename.includes('토스') || filename.includes('toss')) {
-    return parseTossBank(filePath, password);
+    return await parseTossBank(filePath, password);
   }
 
   throw new Error(`알 수 없는 파일 형식: ${path.basename(filePath)}`);

@@ -87,14 +87,14 @@ app.get('/api/files', (req, res) => {
 });
 
 // 파일 파싱 및 거래내역 반환
-app.get('/api/parse/:filename', (req, res) => {
+app.get('/api/parse/:filename', async (req, res) => {
   try {
     const filePath = path.join(IMPORT_DIR, req.params.filename);
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: '파일을 찾을 수 없습니다.' });
     }
 
-    const transactions = parseExcelFile(filePath);
+    const transactions = await parseExcelFile(filePath);
     const budgetData = toBudgetFormat(transactions);
 
     res.json({
@@ -108,7 +108,7 @@ app.get('/api/parse/:filename', (req, res) => {
 });
 
 // 모든 파일 파싱
-app.get('/api/parse-all', (req, res) => {
+app.get('/api/parse-all', async (req, res) => {
   try {
     const files = fs.readdirSync(IMPORT_DIR)
       .filter(f => f.endsWith('.xlsx') || f.endsWith('.xls'));
@@ -118,7 +118,7 @@ app.get('/api/parse-all', (req, res) => {
     for (const file of files) {
       try {
         const filePath = path.join(IMPORT_DIR, file);
-        const transactions = parseExcelFile(filePath);
+        const transactions = await parseExcelFile(filePath);
         allTransactions = allTransactions.concat(transactions);
       } catch (e) {
         console.error(`파일 파싱 실패: ${file}`, e.message);
@@ -145,7 +145,7 @@ app.get('/api/categories', (req, res) => {
 });
 
 // 파일 업로드 및 파싱
-app.post('/api/upload', upload.array('files'), (req, res) => {
+app.post('/api/upload', upload.array('files'), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: '파일이 없습니다.' });
@@ -159,7 +159,7 @@ app.post('/api/upload', upload.array('files'), (req, res) => {
 
     for (const file of req.files) {
       try {
-        const transactions = parseExcelFile(file.path, password);
+        const transactions = await parseExcelFile(file.path, password);
         const budgetData = toBudgetFormat(transactions);
         allTransactions = allTransactions.concat(transactions);
         fileResults.push({ name: file.originalname, status: 'success', count: transactions.length });
@@ -202,7 +202,7 @@ app.post('/api/upload', upload.array('files'), (req, res) => {
 });
 
 // 단일 파일 파싱 (비밀번호 지원)
-app.post('/api/parse-file', upload.single('file'), (req, res) => {
+app.post('/api/parse-file', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '파일이 없습니다.' });
@@ -212,7 +212,7 @@ app.post('/api/parse-file', upload.single('file'), (req, res) => {
     const fileName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
 
     try {
-      const transactions = parseExcelFile(req.file.path, password);
+      const transactions = await parseExcelFile(req.file.path, password);
       const budgetData = toBudgetFormat(transactions);
 
       res.json({
@@ -238,7 +238,7 @@ app.post('/api/parse-file', upload.single('file'), (req, res) => {
 });
 
 // 저장된 파일 재파싱 (비밀번호로)
-app.post('/api/parse-saved', express.json(), (req, res) => {
+app.post('/api/parse-saved', express.json(), async (req, res) => {
   try {
     const { filePath, password, fileName } = req.body;
 
@@ -247,7 +247,7 @@ app.post('/api/parse-saved', express.json(), (req, res) => {
     }
 
     try {
-      const transactions = parseExcelFile(filePath, password || '');
+      const transactions = await parseExcelFile(filePath, password || '');
       const budgetData = toBudgetFormat(transactions);
 
       res.json({
