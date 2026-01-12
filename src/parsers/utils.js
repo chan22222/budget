@@ -1,15 +1,12 @@
 import XLSX from 'xlsx';
 import XlsxPopulate from 'xlsx-populate';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
 
 // 자동 시도할 비밀번호 목록
 export const AUTO_PASSWORDS = ['891117', '19891117'];
 
 /**
  * 엑셀 파일 열기 (비밀번호 자동 시도)
- * xlsx-populate로 먼저 시도하고, 실패하면 xlsx로 시도
+ * 각 비밀번호에 대해 xlsx-populate와 xlsx 모두 시도
  */
 export async function openExcelFile(filePath, password = '') {
   // 사용자 입력 비밀번호 + 자동 비밀번호 모두 시도
@@ -17,8 +14,8 @@ export async function openExcelFile(filePath, password = '') {
   let lastError = null;
 
   for (const pw of passwords) {
+    // 1. xlsx-populate로 시도
     try {
-      // xlsx-populate로 시도 (비밀번호 지원 더 좋음)
       const options = pw ? { password: pw } : {};
       const workbook = await XlsxPopulate.fromFileAsync(filePath, options);
       console.log(`파일 열기 성공 (xlsx-populate)${pw ? ` (비밀번호: ${pw.substring(0,2)}***)` : ''}`);
@@ -28,44 +25,25 @@ export async function openExcelFile(filePath, password = '') {
       const xlsxWorkbook = XLSX.read(buffer, { type: 'buffer' });
       return xlsxWorkbook;
     } catch (e) {
-      lastError = e;
       console.log(`xlsx-populate 시도 실패 (${pw || '없음'}): ${e.message}`);
-
-      // 비밀번호 관련 오류면 다음 비밀번호 시도
-      if (e.message.includes('password') ||
-          e.message.includes('encrypt') ||
-          e.message.includes('CFB') ||
-          e.message.includes('Unsupported') ||
-          e.message.includes('corrupted')) {
-        continue;
-      }
+      lastError = e;
     }
 
-    // xlsx-populate 실패 시 기존 xlsx로 시도
+    // 2. xlsx로 시도 (같은 비밀번호로)
     try {
       const options = pw ? { password: pw } : {};
       const workbook = XLSX.readFile(filePath, options);
       console.log(`파일 열기 성공 (xlsx)${pw ? ` (비밀번호: ${pw.substring(0,2)}***)` : ''}`);
       return workbook;
     } catch (e) {
-      lastError = e;
       console.log(`xlsx 시도 실패 (${pw || '없음'}): ${e.message}`);
-
-      if (e.message.includes('password') ||
-          e.message.includes('encrypt') ||
-          e.message.includes('CFB') ||
-          e.message.includes('Unsupported') ||
-          e.message.includes('corrupted')) {
-        continue;
-      }
+      lastError = e;
     }
   }
 
   // 모든 비밀번호 실패
   console.log('모든 비밀번호 실패:', lastError?.message);
-  console.log('마지막 오류 전체:', lastError);
 
-  // 실제 오류 메시지 전달 (디버깅용)
   const err = new Error('NEED_PASSWORD');
   err.originalError = lastError?.message;
   throw err;
