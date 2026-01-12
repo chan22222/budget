@@ -47,8 +47,8 @@ export async function parseTossBank(filePath, password = '') {
     // 지출수단 결정 (현금, 체크카드, 신용카드만 가능)
     let paymentMethod = '체크카드';
 
-    // 대분류 추정
-    let category = guessCategory(description, memo);
+    // 대분류 추정 (수입 여부 전달)
+    let category = guessCategory(description, memo, isIncome);
 
     // 내용: 적요 + 메모 병합
     let content = description;
@@ -74,8 +74,26 @@ export async function parseTossBank(filePath, password = '') {
   return transactions;
 }
 
-function guessCategory(description, memo) {
+function guessCategory(description, memo, isIncome = false) {
   const text = `${description} ${memo}`.toLowerCase();
+
+  // 수입인 경우
+  if (isIncome) {
+    if (text.includes('급여') || text.includes('월급') || text.includes('급료')) {
+      return { main: '주수입', sub: '급여' };
+    }
+    if (text.includes('인센티브') || text.includes('보너스') || text.includes('상여')) {
+      return { main: '주수입', sub: '인센티브' };
+    }
+    if (text.includes('이자') || text.includes('캐시백') || text.includes('리워드')) {
+      return { main: '부수입', sub: '이자캐시백' };
+    }
+    if (text.includes('포인트')) {
+      return { main: '부수입', sub: '포인트적립' };
+    }
+    // 기본 수입은 부수입으로
+    return { main: '부수입', sub: '부업' };
+  }
 
   // 식비
   if (text.includes('쿠팡이츠') || text.includes('배민') || text.includes('요기요') || text.includes('배달')) {
