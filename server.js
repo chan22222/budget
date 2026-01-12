@@ -438,9 +438,15 @@ app.get('/api/google/read/:month', async (req, res) => {
 app.post('/api/google/append', async (req, res) => {
   try {
     const { month, data } = req.body;
+    console.log(`[append] 월: ${month}, 데이터: ${data?.length || 0}건`);
+    if (data && data.length > 0) {
+      console.log('[append] 첫 번째 항목:', JSON.stringify(data[0]));
+    }
     const result = await gsheets.appendToSheet(month, data);
-    res.json({ success: true, result });
+    console.log('[append] 결과:', JSON.stringify(result));
+    res.json({ success: true, ...result });
   } catch (e) {
+    console.error('[append] 오류:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
