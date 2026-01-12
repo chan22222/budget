@@ -288,6 +288,12 @@ export async function appendToSheet(month, data) {
       비고: String(row[10] || '')
     }));
 
+  // 금액을 숫자로 변환 (쉼표 제거)
+  function toNumber(val) {
+    if (!val && val !== 0) return 0;
+    return Number(String(val).replace(/,/g, '')) || 0;
+  }
+
   // 2글자 이상 겹치는지 체크
   function hasCommonChars(str1, str2, minChars = 2) {
     if (!str1 || !str2) return false;
@@ -307,8 +313,9 @@ export async function appendToSheet(month, data) {
   const newData = data.filter(row => {
     const isDuplicate = existingRows.some(existing => {
       const sameDate = String(row.날짜) === existing.날짜;
-      const sameIncome = String(row.수입금액 || '') === existing.수입금액;
-      const sameExpense = String(row.지출금액 || '') === existing.지출금액;
+      // 금액은 숫자로 변환해서 비교 (쉼표 제거)
+      const sameIncome = toNumber(row.수입금액) === toNumber(existing.수입금액);
+      const sameExpense = toNumber(row.지출금액) === toNumber(existing.지출금액);
       const sameAmount = sameIncome && sameExpense;
       const contentOverlap = hasCommonChars(row.내용, existing.내용, 2);
 
