@@ -220,12 +220,10 @@
         </span>
       </h2>
       <div class="files" id="fileList">
-        <button class="file-btn" onclick="loadAllFiles()">전체 불러오기</button>
         <label class="file-btn" style="cursor:pointer;">
           파일 업로드
           <input type="file" id="fileUpload" accept=".xlsx,.xls" multiple style="display:none;" onchange="uploadFiles(this.files)">
         </label>
-        <input type="password" id="excelPassword" placeholder="엑셀 비밀번호 (선택)" style="padding:8px 12px; border:1px solid #ddd; border-radius:5px; font-size:13px; width:150px;">
         <button class="file-btn google" onclick="connectGoogle()" id="btnGoogleConnect">Google 연결</button>
       </div>
       <div style="margin-top:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
@@ -375,6 +373,8 @@
     // 파일 업로드 큐
     let uploadQueue = [];
     let currentUploadFile = null;
+    let currentFilePath = null;  // 서버에 저장된 파일 경로
+    let currentFileName = null;
     let uploadResults = [];
 
     // 초기화
@@ -492,9 +492,10 @@
       allData = [];
       fileData = {};
       currentFile = 'all';
+      currentFilePath = null;
+      currentFileName = null;
 
       document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">업로드 중...</td></tr>';
-      document.getElementById('excelPassword').value = '';
 
       // 첫 번째 파일부터 처리
       await processNextFile();
@@ -524,7 +525,9 @@
         const result = await res.json();
 
         if (result.needPassword) {
-          // 비밀번호 필요 - 모달 표시
+          // 비밀번호 필요 - 서버 파일 경로 저장 후 모달 표시
+          currentFilePath = result.filePath;
+          currentFileName = result.name;
           document.getElementById('pwFileName').textContent = result.name;
           document.getElementById('pwInput').value = '';
           document.getElementById('passwordModal').classList.add('show');
@@ -554,20 +557,53 @@
 
       if (!password) {
         // 비밀번호 없으면 건너뛰기
-        uploadResults.push({ name: currentUploadFile.name, status: 'skipped' });
+        uploadResults.push({ name: currentFileName, status: 'skipped' });
         await processNextFile();
         return;
       }
 
-      // 현재 파일을 큐 맨 앞에 다시 넣고 비밀번호로 재시도
-      uploadQueue.unshift(currentUploadFile);
-      await processNextFile(password);
+      // 서버에 저장된 파일 경로로 재파싱 요청
+      try {
+        const res = await fetch('/api/parse-saved', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filePath: currentFilePath,
+            password: password,
+            fileName: currentFileName
+          })
+        });
+
+        const result = await res.json();
+
+        if (result.needPassword) {
+          // 비밀번호 틀림 - 다시 모달 표시
+          alert('비밀번호가 틀렸습니다.');
+          document.getElementById('pwInput').value = '';
+          document.getElementById('passwordModal').classList.add('show');
+          document.getElementById('pwInput').focus();
+        } else if (result.success) {
+          // 성공
+          uploadResults.push({ name: result.name, status: 'success', count: result.count });
+          fileData[result.name] = result.data;
+          allData = allData.concat(result.data);
+          // 다음 파일
+          await processNextFile();
+        } else {
+          // 에러
+          uploadResults.push({ name: currentFileName, status: 'error', error: result.error });
+          await processNextFile();
+        }
+      } catch (e) {
+        uploadResults.push({ name: currentFileName, status: 'error', error: e.message });
+        await processNextFile();
+      }
     }
 
     // 파일 건너뛰기
     async function skipPasswordFile() {
       document.getElementById('passwordModal').classList.remove('show');
-      uploadResults.push({ name: currentUploadFile.name, status: 'skipped' });
+      uploadResults.push({ name: currentFileName, status: 'skipped' });
       await processNextFile();
     }
 

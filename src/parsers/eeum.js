@@ -46,8 +46,8 @@ export function parseEeum(filePath, password = '') {
       description: `인천e음 결제`,
       incomeAmount: 0,
       expenseAmount: amount,
-      paymentMethod: '인천e음',
-      expenseType: '변동',
+      paymentMethod: '체크카드',
+      expenseType: '변동지출',
       memo: '인천e음',
       source: '인천e음',
       balance

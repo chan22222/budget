@@ -301,17 +301,22 @@ export async function appendToSheet(month, data) {
     return false;
   }
 
-  // 느슨한 중복 체크: 날짜 + 금액 + 은행(비고) 동일 + 내용 2글자 이상 겹침
+  // 중복 체크: 날짜 + 금액 + 내용 2글자 이상 겹침
+  console.log(`중복 체크: 기존 ${existingRows.length}건, 신규 ${data.length}건`);
+
   const newData = data.filter(row => {
     const isDuplicate = existingRows.some(existing => {
       const sameDate = String(row.날짜) === existing.날짜;
       const sameIncome = String(row.수입금액 || '') === existing.수입금액;
       const sameExpense = String(row.지출금액 || '') === existing.지출금액;
       const sameAmount = sameIncome && sameExpense;
-      const sameBank = String(row.비고 || '') === existing.비고;
       const contentOverlap = hasCommonChars(row.내용, existing.내용, 2);
 
-      return sameDate && sameAmount && sameBank && contentOverlap;
+      if (sameDate && sameAmount && contentOverlap) {
+        console.log(`중복 발견: [${row.날짜}] ${row.내용} (${row.지출금액}) vs [${existing.날짜}] ${existing.내용} (${existing.지출금액})`);
+      }
+
+      return sameDate && sameAmount && contentOverlap;
     });
     return !isDuplicate;
   });

@@ -44,13 +44,8 @@ export function parseTossBank(filePath, password = '') {
     const incomeAmount = isIncome ? Math.abs(amount) : 0;
     const expenseAmount = !isIncome ? Math.abs(amount) : 0;
 
-    // 지출수단 결정
+    // 지출수단 결정 (현금, 체크카드, 신용카드만 가능)
     let paymentMethod = '체크카드';
-    if (txType.includes('송금') || txType.includes('출금')) {
-      paymentMethod = '이체';
-    } else if (txType.includes('입금')) {
-      paymentMethod = '입금';
-    }
 
     // 대분류 추정
     let category = guessCategory(description, memo);
@@ -69,8 +64,8 @@ export function parseTossBank(filePath, password = '') {
       incomeAmount,
       expenseAmount,
       paymentMethod,
-      expenseType: isIncome ? '' : '변동',
-      memo: '토스뱅크',
+      expenseType: isIncome ? '' : '변동지출',
+      memo: '쀼카드',
       source: '토스뱅크',
       balance
     });
