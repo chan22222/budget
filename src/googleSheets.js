@@ -310,8 +310,9 @@ export async function appendToSheet(month, data) {
   // 중복 체크: 날짜 + 금액 + 내용 2글자 이상 겹침
   console.log(`중복 체크: 기존 ${existingRows.length}건, 신규 ${data.length}건`);
 
+  const duplicates = [];  // 중복 항목 저장
   const newData = data.filter(row => {
-    const isDuplicate = existingRows.some(existing => {
+    const matchedExisting = existingRows.find(existing => {
       const sameDate = String(row.날짜) === existing.날짜;
       // 금액은 숫자로 변환해서 비교 (쉼표 제거)
       const sameIncome = toNumber(row.수입금액) === toNumber(existing.수입금액);
@@ -319,17 +320,29 @@ export async function appendToSheet(month, data) {
       const sameAmount = sameIncome && sameExpense;
       const contentOverlap = hasCommonChars(row.내용, existing.내용, 2);
 
-      if (sameDate && sameAmount && contentOverlap) {
-        console.log(`중복 발견: [${row.날짜}] ${row.내용} (${row.지출금액}) vs [${existing.날짜}] ${existing.내용} (${existing.지출금액})`);
-      }
-
       return sameDate && sameAmount && contentOverlap;
     });
-    return !isDuplicate;
+
+    if (matchedExisting) {
+      duplicates.push({
+        new: `[${row.날짜}일] ${row.내용} (${row.지출금액 || row.수입금액}원)`,
+        existing: `[${matchedExisting.날짜}일] ${matchedExisting.내용} (${matchedExisting.지출금액 || matchedExisting.수입금액}원)`
+      });
+      console.log(`중복 발견: ${row.내용} vs ${matchedExisting.내용}`);
+      return false;
+    }
+    return true;
   });
 
+  console.log(`중복 ${duplicates.length}건, 신규 ${newData.length}건`);
+
   if (newData.length === 0) {
-    return { updatedRows: 0, message: '모든 데이터가 이미 존재합니다.' };
+    return {
+      updatedRows: 0,
+      message: '모든 데이터가 이미 존재합니다.',
+      duplicates: duplicates,
+      existingCount: existingRows.length
+    };
   }
 
   // 데이터를 배열 형식으로 변환 (F, G 열은 빈칸)
@@ -359,7 +372,9 @@ export async function appendToSheet(month, data) {
   return {
     ...response.data,
     addedCount: newData.length,
-    skippedCount: data.length - newData.length
+    skippedCount: data.length - newData.length,
+    duplicates: duplicates,
+    existingCount: existingRows.length
   };
 }
 

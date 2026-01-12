@@ -914,18 +914,45 @@
         });
 
         const result = await res.json();
-        if (result.success) {
+        if (result.error) {
+          alert('동기화 실패: ' + result.error);
+        } else {
           const added = result.addedCount || 0;
           const skipped = result.skippedCount || 0;
-          if (skipped > 0) {
-            alert(`${selectedMonth} 시트에 ${added}건 추가 완료!\n(중복 ${skipped}건 제외)`);
-          } else if (added === 0) {
-            alert(`모든 데이터가 이미 존재합니다.`);
-          } else {
-            alert(`${selectedMonth} 시트에 ${added}건 추가 완료!`);
+          const existingCount = result.existingCount || 0;
+          const duplicates = result.duplicates || [];
+
+          let msg = '';
+          if (added > 0) {
+            msg = `${selectedMonth} 시트에 ${added}건 추가 완료!`;
           }
-        } else {
-          alert('동기화 실패: ' + result.error);
+
+          if (skipped > 0) {
+            msg += `\n\n중복 제외: ${skipped}건`;
+            // 중복 항목 상세 (최대 5개)
+            const showDups = duplicates.slice(0, 5);
+            showDups.forEach(d => {
+              msg += `\n  - ${d.new}`;
+            });
+            if (duplicates.length > 5) {
+              msg += `\n  ... 외 ${duplicates.length - 5}건`;
+            }
+          }
+
+          if (added === 0 && skipped === 0) {
+            msg = `시트에 기존 데이터 ${existingCount}건 있음\n추가할 새 데이터가 없습니다.`;
+          } else if (added === 0 && skipped > 0) {
+            msg = `모든 데이터(${skipped}건)가 이미 존재합니다.\n\n시트 기존 데이터: ${existingCount}건`;
+            const showDups = duplicates.slice(0, 5);
+            showDups.forEach(d => {
+              msg += `\n  - ${d.new}`;
+            });
+            if (duplicates.length > 5) {
+              msg += `\n  ... 외 ${duplicates.length - 5}건`;
+            }
+          }
+
+          alert(msg);
         }
       } catch (e) {
         alert('동기화 실패: ' + e.message);
