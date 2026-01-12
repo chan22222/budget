@@ -7,7 +7,8 @@ export const AUTO_PASSWORDS = ['891117', '19891117'];
  * 엑셀 파일 열기 (비밀번호 자동 시도)
  */
 export function openExcelFile(filePath, password = '') {
-  const passwords = password ? [password] : ['', ...AUTO_PASSWORDS];
+  // 사용자 입력 비밀번호 + 자동 비밀번호 모두 시도
+  const passwords = password ? [password, ...AUTO_PASSWORDS] : ['', ...AUTO_PASSWORDS];
   let lastError = null;
 
   for (const pw of passwords) {
