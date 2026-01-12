@@ -578,7 +578,8 @@
 
         if (result.needPassword) {
           // 비밀번호 틀림 - 다시 모달 표시
-          alert('비밀번호가 틀렸습니다.');
+          const errMsg = result.originalError ? `\n(오류: ${result.originalError})` : '';
+          alert('비밀번호가 틀렸습니다.' + errMsg);
           document.getElementById('pwInput').value = '';
           document.getElementById('passwordModal').classList.add('show');
           document.getElementById('pwInput').focus();

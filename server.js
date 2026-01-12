@@ -243,12 +243,14 @@ app.post('/api/parse-saved', express.json(), (req, res) => {
         data: budgetData
       });
     } catch (e) {
+      console.log('parse-saved 오류:', e.message, e.originalError);
       if (e.message === 'NEED_PASSWORD') {
         return res.json({
           success: false,
           needPassword: true,
           name: fileName,
-          filePath: filePath
+          filePath: filePath,
+          originalError: e.originalError  // 원본 오류 메시지
         });
       }
       throw e;

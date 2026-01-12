@@ -35,5 +35,10 @@ export function openExcelFile(filePath, password = '') {
 
   // 모든 비밀번호 실패
   console.log('모든 비밀번호 실패:', lastError?.message);
-  throw new Error('NEED_PASSWORD');
+  console.log('마지막 오류 전체:', lastError);
+
+  // 실제 오류 메시지 전달 (디버깅용)
+  const err = new Error('NEED_PASSWORD');
+  err.originalError = lastError?.message;
+  throw err;
 }
