@@ -771,7 +771,7 @@
 
       tbody.innerHTML = data.map((row, idx) => `
         <tr data-idx="${idx}">
-          <td>${formatDate(row.날짜)}</td>
+          <td>${formatDisplayDate(row._fullDate)}</td>
           <td>
             <select class="category-select" onchange="updateCategory(${idx}, 'main', this.value)">
               ${Object.keys(categories).map(c =>
@@ -798,7 +798,19 @@
       updateSummary();
     }
 
-    // 날짜 포맷 (MM-DD)
+    // 날짜 포맷 - 화면 표시용 (1월 8일)
+    function formatDisplayDate(dateStr) {
+      if (!dateStr) return '';
+      const parts = dateStr.split('-');
+      if (parts.length >= 3) {
+        const month = parseInt(parts[1], 10);
+        const day = parseInt(parts[2], 10);
+        return `${month}월 ${day}일`;
+      }
+      return dateStr;
+    }
+
+    // 날짜 포맷 (MM-DD) - 기존 호환용
     function formatDate(dateStr) {
       if (!dateStr) return '';
       const parts = dateStr.split('-');
