@@ -187,6 +187,42 @@ app.post('/api/upload', upload.array('files'), (req, res) => {
   }
 });
 
+// 단일 파일 파싱 (비밀번호 지원)
+app.post('/api/parse-file', upload.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: '파일이 없습니다.' });
+    }
+
+    const password = req.body.password || '';
+    const fileName = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+
+    try {
+      const transactions = parseExcelFile(req.file.path, password);
+      const budgetData = toBudgetFormat(transactions);
+
+      res.json({
+        success: true,
+        name: fileName,
+        count: transactions.length,
+        data: budgetData
+      });
+    } catch (e) {
+      if (e.message === 'NEED_PASSWORD') {
+        return res.json({
+          success: false,
+          needPassword: true,
+          name: fileName,
+          path: req.file.path
+        });
+      }
+      throw e;
+    }
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // 거래 업데이트 (카테고리 수정 등)
 app.post('/api/update', (req, res) => {
   // TODO: 수정된 데이터 저장

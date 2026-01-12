@@ -323,6 +323,19 @@
     </div>
   </div>
 
+  <!-- Password Modal -->
+  <div class="modal" id="passwordModal">
+    <div class="modal-content">
+      <h3>비밀번호 입력</h3>
+      <p><strong id="pwFileName"></strong> 파일의 비밀번호를 입력해주세요.</p>
+      <input type="password" id="pwInput" style="width:100%;padding:10px;margin:15px 0;border:1px solid #ddd;border-radius:5px;font-size:14px;" placeholder="비밀번호" onkeypress="if(event.key==='Enter')submitPassword()">
+      <div class="btn-group">
+        <button class="btn-cancel" onclick="skipPasswordFile()">건너뛰기</button>
+        <button class="btn-confirm" onclick="submitPassword()">확인</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Google Sync Modal -->
   <div class="modal" id="syncModal">
     <div class="modal-content">
@@ -358,6 +371,11 @@
     let currentFile = 'all';  // 현재 선택된 파일
     let categories = {};
     let googleConnected = false;
+
+    // 파일 업로드 큐
+    let uploadQueue = [];
+    let currentUploadFile = null;
+    let uploadResults = [];
 
     // 초기화
     async function init() {
@@ -464,55 +482,117 @@
       }
     }
 
-    // 파일 업로드
+    // 파일 업로드 (순차 처리)
     async function uploadFiles(files) {
       if (!files.length) return;
 
-      const password = document.getElementById('excelPassword').value;
-      const formData = new FormData();
-      for (const file of files) {
-        formData.append('files', file);
+      // 초기화
+      uploadQueue = Array.from(files);
+      uploadResults = [];
+      allData = [];
+      fileData = {};
+      currentFile = 'all';
+
+      document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">업로드 중...</td></tr>';
+      document.getElementById('excelPassword').value = '';
+
+      // 첫 번째 파일부터 처리
+      await processNextFile();
+    }
+
+    // 다음 파일 처리
+    async function processNextFile(password = '') {
+      if (uploadQueue.length === 0) {
+        // 모든 파일 처리 완료
+        finishUpload();
+        return;
       }
+
+      currentUploadFile = uploadQueue.shift();
+      const formData = new FormData();
+      formData.append('file', currentUploadFile);
       if (password) {
         formData.append('password', password);
       }
 
-      document.getElementById('tableBody').innerHTML = '<tr><td colspan="9" class="loading">업로드 중...</td></tr>';
+      try {
+        const res = await fetch('/api/parse-file', {
+          method: 'POST',
+          body: formData
+        });
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
+        const result = await res.json();
 
-      const result = await res.json();
-      if (result.error) {
-        if (result.error === 'NEED_PASSWORD') {
-          document.getElementById('excelPassword').focus();
-          alert('엑셀 비밀번호를 입력해주세요.');
+        if (result.needPassword) {
+          // 비밀번호 필요 - 모달 표시
+          document.getElementById('pwFileName').textContent = result.name;
+          document.getElementById('pwInput').value = '';
+          document.getElementById('passwordModal').classList.add('show');
+          document.getElementById('pwInput').focus();
+        } else if (result.success) {
+          // 성공
+          uploadResults.push({ name: result.name, status: 'success', count: result.count });
+          fileData[result.name] = result.data;
+          allData = allData.concat(result.data);
+          // 다음 파일
+          await processNextFile();
         } else {
-          alert(result.error);
+          // 에러
+          uploadResults.push({ name: currentUploadFile.name, status: 'error', error: result.error });
+          await processNextFile();
         }
-        document.getElementById('tableBody').innerHTML = '';
+      } catch (e) {
+        uploadResults.push({ name: currentUploadFile.name, status: 'error', error: e.message });
+        await processNextFile();
+      }
+    }
+
+    // 비밀번호 제출
+    async function submitPassword() {
+      const password = document.getElementById('pwInput').value;
+      document.getElementById('passwordModal').classList.remove('show');
+
+      if (!password) {
+        // 비밀번호 없으면 건너뛰기
+        uploadResults.push({ name: currentUploadFile.name, status: 'skipped' });
+        await processNextFile();
         return;
       }
 
-      // 업로드 후 파일 목록 새로고침 및 데이터 로드
-      allData = result.data;
-      fileData = result.fileData || {};
-      currentFile = 'all';
+      // 현재 파일을 큐 맨 앞에 다시 넣고 비밀번호로 재시도
+      uploadQueue.unshift(currentUploadFile);
+      await processNextFile(password);
+    }
+
+    // 파일 건너뛰기
+    async function skipPasswordFile() {
+      document.getElementById('passwordModal').classList.remove('show');
+      uploadResults.push({ name: currentUploadFile.name, status: 'skipped' });
+      await processNextFile();
+    }
+
+    // 업로드 완료
+    function finishUpload() {
+      // 날짜순 정렬
+      allData.sort((a, b) => (a._fullDate || '').localeCompare(b._fullDate || ''));
 
       // 파일 탭 생성
-      renderFileTabs(result.files || []);
+      renderFileTabs(uploadResults);
 
       renderTable();
       updateSummary();
-      document.getElementById('excelPassword').value = ''; // 비밀번호 초기화
 
-      // 비밀번호 필요한 파일 알림
-      if (result.needPasswordFiles && result.needPasswordFiles.length > 0) {
-        alert(`${result.count}건 로드됨.\n비밀번호 필요: ${result.needPasswordFiles.join(', ')}`);
+      // 결과 알림
+      const successCount = uploadResults.filter(r => r.status === 'success').length;
+      const totalCount = allData.length;
+      const skippedFiles = uploadResults.filter(r => r.status === 'skipped').map(r => r.name);
+
+      if (skippedFiles.length > 0) {
+        alert(`${totalCount}건 로드됨 (${successCount}개 파일)\n건너뛴 파일: ${skippedFiles.join(', ')}`);
+      } else if (successCount > 0) {
+        alert(`${totalCount}건의 거래가 로드되었습니다.`);
       } else {
-        alert(`${result.count}건의 거래가 로드되었습니다.`);
+        alert('로드된 데이터가 없습니다.');
       }
     }
 
