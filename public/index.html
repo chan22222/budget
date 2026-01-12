@@ -379,6 +379,9 @@
 
     // 초기화
     async function init() {
+      // 페이지 로드 시 import 폴더 비우기
+      await fetch('/api/files', { method: 'DELETE' });
+
       await loadFiles();
       await loadCategories();
       await checkGoogleStatus();

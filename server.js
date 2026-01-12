@@ -56,6 +56,20 @@ const CATEGORIES = {
   저축: ['적금', '예금', '주택청약']
 };
 
+// import 폴더 비우기
+app.delete('/api/files', (req, res) => {
+  try {
+    const files = fs.readdirSync(IMPORT_DIR);
+    for (const file of files) {
+      fs.unlinkSync(path.join(IMPORT_DIR, file));
+    }
+    console.log(`import 폴더 비움: ${files.length}개 파일 삭제`);
+    res.json({ success: true, deleted: files.length });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // import 폴더의 파일 목록
 app.get('/api/files', (req, res) => {
   try {
