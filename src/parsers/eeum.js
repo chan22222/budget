@@ -3,7 +3,7 @@ import { openExcelFile } from './utils.js';
 
 /**
  * 인천e음 카드 거래내역 파싱
- * 컬럼: 거래일시, 카드번호, 결제처, 거래방식, 승인번호, 거래금액, 총 결제금액, 충전잔액, 내 캐시, 공급가액
+ * 컬럼: 거래일시, 카드번호, 결제처, 거래방식, 승인번호, 거래금액, 총 결제금액, 충전잔액, 내 캐시, 공급가액, 부가세, 1회용컵보증금, 가맹점명, 사업자번호
  */
 export async function parseEeum(filePath, password = '') {
   const workbook = await openExcelFile(filePath, password);
@@ -26,7 +26,7 @@ export async function parseEeum(filePath, password = '') {
     if (!row[0]) continue;
 
     const dateStr = String(row[0]); // 2025/12/19 21:14:46
-    const merchant = String(row[2] || ''); // 결제처(가맹점명)
+    const merchant = String(row[12] || ''); // 가맹점명
     const txType = String(row[3] || ''); // 충전/결제
     const amount = Number(row[5]) || 0;
     const balance = Number(row[7]) || 0;
