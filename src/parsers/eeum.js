@@ -26,6 +26,7 @@ export async function parseEeum(filePath, password = '') {
     if (!row[0]) continue;
 
     const dateStr = String(row[0]); // 2025/12/19 21:14:46
+    const merchant = String(row[2] || ''); // 결제처(가맹점명)
     const txType = String(row[3] || ''); // 충전/결제
     const amount = Number(row[5]) || 0;
     const balance = Number(row[7]) || 0;
@@ -43,7 +44,7 @@ export async function parseEeum(filePath, password = '') {
       date,
       category: '기타지출',
       subcategory: '기타지출',
-      description: `인천e음 결제`,
+      description: merchant || '인천e음 결제',
       incomeAmount: 0,
       expenseAmount: amount,
       paymentMethod: '체크카드',
