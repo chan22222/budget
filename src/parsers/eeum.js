@@ -19,6 +19,13 @@ export async function parseEeum(filePath, password = '') {
     throw new Error('인천e음 형식을 인식할 수 없습니다.');
   }
 
+  // 헤더에서 컬럼 인덱스 찾기
+  const header = data[headerIdx];
+  const merchantIdx = header.findIndex(cell => String(cell).includes('가맹점명'));
+  const txTypeIdx = header.findIndex(cell => String(cell).includes('거래방식'));
+  const amountIdx = header.findIndex(cell => String(cell).includes('거래금액'));
+  const balanceIdx = header.findIndex(cell => String(cell).includes('충전잔액'));
+
   const transactions = [];
 
   for (let i = headerIdx + 1; i < data.length; i++) {
@@ -26,10 +33,10 @@ export async function parseEeum(filePath, password = '') {
     if (!row[0]) continue;
 
     const dateStr = String(row[0]); // 2025/12/19 21:14:46
-    const merchant = String(row[12] || ''); // 가맹점명
-    const txType = String(row[3] || ''); // 충전/결제
-    const amount = Number(row[5]) || 0;
-    const balance = Number(row[7]) || 0;
+    const merchant = merchantIdx >= 0 ? String(row[merchantIdx] || '') : '';
+    const txType = txTypeIdx >= 0 ? String(row[txTypeIdx] || '') : '';
+    const amount = amountIdx >= 0 ? (Number(String(row[amountIdx]).replace(/,/g, '')) || 0) : 0;
+    const balance = balanceIdx >= 0 ? (Number(String(row[balanceIdx]).replace(/,/g, '')) || 0) : 0;
 
     // 날짜 파싱
     const dateParts = dateStr.match(/(\d{4})\/(\d{2})\/(\d{2})/);
