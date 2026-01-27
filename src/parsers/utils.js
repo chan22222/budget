@@ -129,13 +129,20 @@ export function guessCategory(description, memo = '', isIncome = false) {
   }
 
   // 구독/멤버쉽
-  if (text.includes('유튜브') || text.includes('youtube')) {
+  if (text.includes('유튜브') || text.includes('youtube') || text.includes('쿠팡와우') ||
+      text.includes('넷플릭스') || text.includes('왓챠')) {
     return { main: '건강문화', sub: '멤버쉽' };
+  }
+
+  // 국내여행
+  if (text.includes('펜션') || text.includes('호텔') || text.includes('숙박') ||
+      text.includes('리조트')) {
+    return { main: '기타지출', sub: '국내여행' };
   }
 
   // 술/유흥
   if (text.includes('소주') || text.includes('맥주') || text.includes('술') ||
-      text.includes('유흥') || text.includes('호프')) {
+      text.includes('유흥') || text.includes('호프') || text.includes('막걸리')) {
     return { main: '식비', sub: '술/유흥' };
   }
 
@@ -154,7 +161,9 @@ export function guessCategory(description, memo = '', isIncome = false) {
       text.includes('찌개') || text.includes('순대') || text.includes('떡볶이') ||
       text.includes('락사') || text.includes('부리또') || text.includes('족발') ||
       text.includes('야끼') || text.includes('스시') || text.includes('회관') ||
-      text.includes('장터')) {
+      text.includes('장터') || text.includes('게장') || text.includes('김밥') ||
+      text.includes('돈까스') || text.includes('국밥') || text.includes('맥날') ||
+      text.includes('맥도날드')) {
     return { main: '식비', sub: '외식배달' };
   }
 
@@ -216,6 +225,9 @@ export function guessCategory(description, memo = '', isIncome = false) {
   }
   if (text.includes('관리비') || text.includes('아파트관리')) {
     return { main: '주거통신', sub: '관리비' };
+  }
+  if (text.includes('인터넷') || text.includes('tv') || text.includes('케이블')) {
+    return { main: '주거통신', sub: 'TV인터넷' };
   }
 
   // 금융
