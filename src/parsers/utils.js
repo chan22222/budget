@@ -122,9 +122,15 @@ export function guessCategory(description, memo = '', isIncome = false) {
     return { main: '부수입', sub: '부업' };
   }
 
+  // 노래방
+  if (text.includes('노래') || text.includes('코인노래') || text.includes('코인홀릭') ||
+      text.includes('노래연습')) {
+    return { main: '건강문화', sub: '문화생활' };
+  }
+
   // 편의점
-  if (text.includes('gs25') || text.includes('cu ') || text.includes('세븐일레븐') ||
-      text.includes('이마트24') || text.includes('미니스톱')) {
+  if (text.includes('gs25') || text.includes('지에스25') || text.includes('cu ') ||
+      text.includes('세븐일레븐') || text.includes('이마트24') || text.includes('미니스톱')) {
     return { main: '식비', sub: '음료간식' };
   }
 
@@ -144,7 +150,7 @@ export function guessCategory(description, memo = '', isIncome = false) {
 
   // 식자재/마트
   if (text.includes('마트') || text.includes('롯데') || text.includes('이마트') ||
-      text.includes('홈플러스') || text.includes('식자재') || text.includes('농협')) {
+      text.includes('홈플러스') || text.includes('식자재')) {
     return { main: '식비', sub: '식자재' };
   }
 
@@ -164,7 +170,7 @@ export function guessCategory(description, memo = '', isIncome = false) {
 
   // 주유소
   if (text.includes('주유') || text.includes('기름') || text.includes('gs칼텍스') ||
-      text.includes('sk에너지') || text.includes('농협주유') || text.includes('오일')) {
+      text.includes('sk에너지') || text.includes('농협') || text.includes('오일')) {
     return { main: '차량교통', sub: '주유비' };
   }
 
