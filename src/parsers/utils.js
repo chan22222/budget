@@ -122,10 +122,21 @@ export function guessCategory(description, memo = '', isIncome = false) {
     return { main: '부수입', sub: '부업' };
   }
 
-  // 노래방
+  // 노래방, 찜질방
   if (text.includes('노래') || text.includes('코인노래') || text.includes('코인홀릭') ||
-      text.includes('노래연습')) {
+      text.includes('노래연습') || text.includes('찜질방') || text.includes('사우나')) {
     return { main: '건강문화', sub: '문화생활' };
+  }
+
+  // 구독/멤버쉽
+  if (text.includes('유튜브') || text.includes('youtube')) {
+    return { main: '건강문화', sub: '멤버쉽' };
+  }
+
+  // 술/유흥
+  if (text.includes('소주') || text.includes('맥주') || text.includes('술') ||
+      text.includes('유흥') || text.includes('호프')) {
+    return { main: '식비', sub: '술/유흥' };
   }
 
   // 편의점
@@ -140,7 +151,10 @@ export function guessCategory(description, memo = '', isIncome = false) {
       text.includes('식당') || text.includes('치킨') || text.includes('피자') ||
       text.includes('햄버거') || text.includes('한우') || text.includes('소고기') ||
       text.includes('돼지') || text.includes('구이') || text.includes('탕') ||
-      text.includes('찌개')) {
+      text.includes('찌개') || text.includes('순대') || text.includes('떡볶이') ||
+      text.includes('락사') || text.includes('부리또') || text.includes('족발') ||
+      text.includes('야끼') || text.includes('스시') || text.includes('회관') ||
+      text.includes('장터')) {
     return { main: '식비', sub: '외식배달' };
   }
 
@@ -151,7 +165,7 @@ export function guessCategory(description, memo = '', isIncome = false) {
 
   // 식자재/마트
   if (text.includes('마트') || text.includes('롯데') || text.includes('이마트') ||
-      text.includes('홈플러스') || text.includes('식자재')) {
+      text.includes('홈플러스') || text.includes('식자재') || text.includes('노브랜드')) {
     return { main: '식비', sub: '식자재' };
   }
 
@@ -169,10 +183,16 @@ export function guessCategory(description, memo = '', isIncome = false) {
     return { main: '생활용품', sub: '생활용품' };
   }
 
-  // 주유소
-  if (text.includes('주유') || text.includes('기름') || text.includes('gs칼텍스') ||
-      text.includes('sk에너지') || text.includes('농협') || text.includes('오일')) {
+  // 주유소 (농협주유소, 에너지 등)
+  if (text.includes('주유') || text.includes('에너지') || text.includes('gs칼텍스') ||
+      text.includes('sk에너지') || text.includes('오일')) {
     return { main: '차량교통', sub: '주유비' };
+  }
+
+  // 차량유지비
+  if (text.includes('자동차') || text.includes('엔진오일') || text.includes('세차') ||
+      text.includes('타이어') || text.includes('정비')) {
+    return { main: '차량교통', sub: '차량유지비' };
   }
 
   // 교통
@@ -187,11 +207,15 @@ export function guessCategory(description, memo = '', isIncome = false) {
   }
 
   // 통신
-  if (text.includes('skt') || text.includes('kt') || text.includes('lg u+') || text.includes('통신')) {
+  if (text.includes('skt') || text.includes('kt') || text.includes('lg u+') ||
+      text.includes('통신') || text.includes('텔레콤') || text.includes('폰요금')) {
     return { main: '주거통신', sub: '이동통신' };
   }
   if (text.includes('가스') || text.includes('도시가스')) {
     return { main: '주거통신', sub: '도시가스' };
+  }
+  if (text.includes('관리비') || text.includes('아파트관리')) {
+    return { main: '주거통신', sub: '관리비' };
   }
 
   // 금융
