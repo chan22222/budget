@@ -135,11 +135,12 @@ export function guessCategory(description, memo = '', isIncome = false) {
   }
 
   // 외식 (음식점)
-  if (text.includes('삼겹살') || text.includes('마라탕') || text.includes('곱창') ||
-      text.includes('회뜨는') || text.includes('고깃집') || text.includes('식당') ||
-      text.includes('치킨') || text.includes('피자') || text.includes('햄버거') ||
-      text.includes('한우') || text.includes('소고기') || text.includes('돼지') ||
-      text.includes('구이') || text.includes('탕') || text.includes('찌개')) {
+  if (text.includes('검단아라') || text.includes('삼겹살') || text.includes('마라탕') ||
+      text.includes('곱창') || text.includes('회뜨는') || text.includes('고깃집') ||
+      text.includes('식당') || text.includes('치킨') || text.includes('피자') ||
+      text.includes('햄버거') || text.includes('한우') || text.includes('소고기') ||
+      text.includes('돼지') || text.includes('구이') || text.includes('탕') ||
+      text.includes('찌개')) {
     return { main: '식비', sub: '외식배달' };
   }
 
