@@ -1,5 +1,5 @@
 import XLSX from 'xlsx';
-import { openExcelFile } from './utils.js';
+import { openExcelFile, guessCategory } from './utils.js';
 
 /**
  * 인천e음 카드 거래내역 파싱
@@ -10,9 +10,10 @@ export async function parseEeum(filePath, password = '') {
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
 
-  // 헤더 찾기 (거래일시가 있는 행)
+  // 헤더 찾기 (거래일시와 카드번호가 모두 있는 행)
   let headerIdx = data.findIndex(row =>
-    row.some(cell => String(cell).includes('거래일시'))
+    row.some(cell => String(cell).includes('거래일시')) &&
+    row.some(cell => String(cell).includes('카드번호'))
   );
 
   if (headerIdx === -1) {
@@ -47,10 +48,13 @@ export async function parseEeum(filePath, password = '') {
     // 충전은 제외 (수입으로 처리하지 않음 - 카드 충전이므로)
     if (txType === '충전') continue;
 
+    // 가맹점명 기반 카테고리 추정
+    const category = guessCategory(merchant, '', false);
+
     transactions.push({
       date,
-      category: '기타지출',
-      subcategory: '기타지출',
+      category: category.main,
+      subcategory: category.sub,
       description: merchant || '인천e음 결제',
       incomeAmount: 0,
       expenseAmount: amount,

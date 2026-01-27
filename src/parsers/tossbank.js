@@ -1,5 +1,5 @@
 import XLSX from 'xlsx';
-import { openExcelFile } from './utils.js';
+import { openExcelFile, guessCategory } from './utils.js';
 
 /**
  * 토스뱅크 거래내역 파싱
@@ -72,90 +72,4 @@ export async function parseTossBank(filePath, password = '') {
   }
 
   return transactions;
-}
-
-function guessCategory(description, memo, isIncome = false) {
-  const text = `${description} ${memo}`.toLowerCase();
-
-  // 수입인 경우
-  if (isIncome) {
-    if (text.includes('급여') || text.includes('월급') || text.includes('급료')) {
-      return { main: '주수입', sub: '급여' };
-    }
-    if (text.includes('인센티브') || text.includes('보너스') || text.includes('상여')) {
-      return { main: '주수입', sub: '인센티브' };
-    }
-    if (text.includes('이자') || text.includes('캐시백') || text.includes('리워드')) {
-      return { main: '부수입', sub: '이자캐시백' };
-    }
-    if (text.includes('포인트')) {
-      return { main: '부수입', sub: '포인트적립' };
-    }
-    // 기본 수입은 부수입으로
-    return { main: '부수입', sub: '부업' };
-  }
-
-  // 식비
-  if (text.includes('쿠팡이츠') || text.includes('배민') || text.includes('요기요') || text.includes('배달')) {
-    return { main: '식비', sub: '외식배달' };
-  }
-  if (text.includes('마트') || text.includes('롯데') || text.includes('이마트') || text.includes('홈플러스') || text.includes('식자재')) {
-    return { main: '식비', sub: '식자재' };
-  }
-  if (text.includes('스타벅스') || text.includes('카페') || text.includes('커피') || text.includes('빵')) {
-    return { main: '식비', sub: '음료간식' };
-  }
-
-  // 생활용품
-  if (text.includes('쿠팡') || text.includes('네이버페이') || text.includes('11번가') || text.includes('지마켓')) {
-    return { main: '생활용품', sub: '생활용품' };
-  }
-  if (text.includes('다이소') || text.includes('올리브영')) {
-    return { main: '생활용품', sub: '생활용품' };
-  }
-
-  // 차량교통
-  if (text.includes('주유') || text.includes('기름') || text.includes('gs칼텍스') || text.includes('sk에너지')) {
-    return { main: '차량교통', sub: '주유비' };
-  }
-  if (text.includes('택시') || text.includes('카카오t')) {
-    return { main: '차량교통', sub: '택시비' };
-  }
-  if (text.includes('버스') || text.includes('지하철') || text.includes('교통')) {
-    return { main: '차량교통', sub: '대중교통비' };
-  }
-  if (text.includes('주차') || text.includes('톨게이트') || text.includes('하이패스')) {
-    return { main: '차량교통', sub: '주차톨게비' };
-  }
-
-  // 주거통신
-  if (text.includes('skt') || text.includes('kt') || text.includes('lg u+') || text.includes('통신')) {
-    return { main: '주거통신', sub: '이동통신' };
-  }
-  if (text.includes('가스') || text.includes('도시가스')) {
-    return { main: '주거통신', sub: '도시가스' };
-  }
-
-  // 금융지출
-  if (text.includes('보험') || text.includes('삼성화재') || text.includes('현대해상')) {
-    return { main: '금융지출', sub: '보험' };
-  }
-
-  // 건강문화
-  if (text.includes('병원') || text.includes('약국') || text.includes('의원')) {
-    return { main: '건강문화', sub: '병원/약' };
-  }
-  if (text.includes('헬스') || text.includes('gym') || text.includes('피트니스')) {
-    return { main: '건강문화', sub: '운동취미' };
-  }
-  if (text.includes('넷플릭스') || text.includes('왓챠') || text.includes('영화') || text.includes('cgv') || text.includes('롯데시네마')) {
-    return { main: '건강문화', sub: '문화생활' };
-  }
-
-  // 경조회비
-  if (text.includes('축의금') || text.includes('부의금') || text.includes('경조사')) {
-    return { main: '경조회비', sub: '경조사비' };
-  }
-
-  return { main: '기타지출', sub: '기타지출' };
 }
