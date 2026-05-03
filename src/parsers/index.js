@@ -1,5 +1,6 @@
 import { parseTossBank } from './tossbank.js';
 import { parseEeum } from './eeum.js';
+import { parseCreditCard } from './creditcard.js';
 import { openExcelFile } from './utils.js';
 import XLSX from 'xlsx';
 import path from 'path';
@@ -23,10 +24,19 @@ export async function parseExcelFile(filePath, password = '') {
     return await parseEeum(filePath, password);
   }
 
+  // 신용카드 이용내역 (이용카드명 + 이용하신곳 컬럼)
+  if (content.includes('이용카드명') && content.includes('이용하신곳')) {
+    return await parseCreditCard(filePath, password);
+  }
+
   // 파일명으로 판단
   const filename = path.basename(filePath).toLowerCase();
   if (filename.includes('토스') || filename.includes('toss')) {
     return await parseTossBank(filePath, password);
+  }
+
+  if (filename.includes('카드이용내역')) {
+    return await parseCreditCard(filePath, password);
   }
 
   throw new Error(`알 수 없는 파일 형식: ${path.basename(filePath)}`);
@@ -59,4 +69,4 @@ export function toBudgetFormat(transactions) {
   });
 }
 
-export { parseTossBank, parseEeum };
+export { parseTossBank, parseEeum, parseCreditCard };
