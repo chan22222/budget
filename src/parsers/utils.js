@@ -6,7 +6,7 @@ import path from 'path';
 import os from 'os';
 
 // 자동 시도할 비밀번호 목록
-export const AUTO_PASSWORDS = ['891117', '19891117'];
+export const AUTO_PASSWORDS = ['891117', '19891117', '19951028'];
 
 /**
  * Python msoffcrypto로 복호화 시도
